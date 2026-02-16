@@ -9,9 +9,21 @@ st.set_page_config(page_title="AI Tech News Summarizer", page_icon="🤖")
 st.title("🤖 AI Tech News Summarizer")
 st.markdown("### 最新の技術記事を3行で要約 & インサイト抽出")
 
-# --- サイドバーにAPIキー入力 ---
+# --- サイドバー: APIキー設定 ---
 st.sidebar.header("⚙️ Settings")
-api_key = st.sidebar.text_input("OpenAI API Key", type="password", help="ここにOpenAIのAPIキー（sk-...）を入力してください")
+
+# 1. シークレットからキーを取得（設定されていれば）
+try:
+    api_key_env = st.secrets["OPENAI_API_KEY"]
+except:
+    api_key_env = None
+
+# 2. シークレットがない場合は入力欄を表示
+if api_key_env:
+    api_key = api_key_env
+    st.sidebar.success("✅ API Key loaded from Secrets")
+else:
+    api_key = st.sidebar.text_input("OpenAI API Key", type="password", help="ここにOpenAIのAPIキー（sk-...）を入力してください")
 
 if not api_key:
     st.warning("⚠️ 左側のサイドバーにAPIキーを入力すると機能が有効になります")
