@@ -7,55 +7,105 @@ import os
 # --- ページ設定 ---
 st.set_page_config(
     page_title="AI Tech News Summarizer",
-    page_icon="🤖",
-    layout="centered"
+    page_icon="⚡",
+    layout="wide", # ワイド表示にしてギャラリー感を出す
+    initial_sidebar_state="expanded"
 )
 
-# --- カスタムCSS (おしゃれ化) ---
+# --- カスタムCSS (プレミアムダークモード) ---
 st.markdown("""
 <style>
-    /* 全体のフォントと背景調整 */
+    /* 全体背景 (ダーク) */
     .stApp {
-        background-color: #f8f9fa;
+        background-color: #0E1117;
+        color: #FAFAFA;
     }
-    .main_title {
-        font-size: 3em;
-        font-weight: bold;
-        background: -webkit-linear-gradient(45deg, #007CF0, #00DFD8);
+    
+    /* タイトル (HEROセクション風) */
+    .hero-title {
+        font-family: 'Helvetica Neue', sans-serif;
+        font-size: 4em;
+        font-weight: 900;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-top: 40px;
+        margin-bottom: 10px;
+        background: -webkit-linear-gradient(90deg, #FFFFFF, #999999);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-bottom: 10px;
+        text-shadow: 0px 4px 10px rgba(255, 255, 255, 0.1);
     }
-    .sub_title {
-        text-align: center;
-        color: #666;
-        margin-bottom: 30px;
+    
+    .hero-subtitle {
         font-size: 1.2em;
+        text-align: center;
+        color: #888;
+        letter-spacing: 5px;
+        margin-bottom: 60px;
+        text-transform: uppercase;
     }
-    /* カード風デザイン */
-    .result-card {
+
+    /* 入力エリアのカスタマイズ */
+    .stTextInput > div > div > input {
+        background-color: #262730;
+        color: white;
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    
+    /* ボタンのカスタマイズ */
+    .stButton > button {
         background-color: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
+        color: black;
+        border-radius: 30px;
+        font-weight: bold;
+        padding: 10px 30px;
+        border: none;
+        transition: all 0.3s ease;
     }
-    /* 読み込み中のスピナー */
-    .stSpinner > div {
-        border-color: #007CF0 !important;
+    .stButton > button:hover {
+        background-color: #ddd;
+        transform: scale(1.02);
+    }
+
+    /* 結果カード (Glassmorphism) */
+    .result-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 40px;
+        margin-top: 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+    
+    .card-header {
+        font-size: 1.5em;
+        font-weight: bold;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #444;
+        padding-bottom: 10px;
+        color: #fff;
+    }
+    
+    /* サイドバー */
+    .css-1d391kg {
+        background-color: #111;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- ヘッダー ---
-st.markdown('<div class="main_title">AI Tech News Summarizer</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub_title">最新の技術記事を瞬時に要約 & インサイト抽出 🚀</div>', unsafe_allow_html=True)
+# --- ヘッダーエリア ---
+st.markdown('<div class="hero-title">AI NEWS<br>SUMMARIZER</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-subtitle">DESIGNED FOR ENGINEERS</div>', unsafe_allow_html=True)
 
-# --- サイドバー: APIキー設定 ---
+# --- サイドバー ---
 with st.sidebar:
-    st.header("⚙️ Settings")
-    st.markdown("OpenAIのAPIキーを設定してください。")
+    st.image("https://cdn-icons-png.flaticon.com/512/2583/2583166.png", width=50)
+    st.markdown("### ⚡ Control Panel")
     
     # 1. シークレットからキーを取得
     try:
@@ -63,18 +113,20 @@ with st.sidebar:
     except:
         api_key_env = None
 
-    # 2. キー入力制御
     if api_key_env:
         api_key = api_key_env
-        st.success("✅ API Key loaded safely")
+        st.success("API Key Active")
     else:
-        api_key = st.text_input("API Key", type="password", placeholder="sk-...")
+        api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
         if not api_key:
-            st.warning("⚠️ APIキーを入力してください")
-    
-    st.markdown("---")
-    st.markdown("### 使い方")
-    st.markdown("1. 気になる技術記事のURLをコピー\n2. 入力欄にペースト\n3. ボタンを押して分析開始！")
+            st.warning("Please enter API Key")
+
+# --- メインコンテンツ（中央寄せ） ---
+col1, col2, col3 = st.columns([1, 2, 1])
+
+with col2:
+    url = st.text_input("", placeholder="ここに記事のURLをペーストしてください...", label_visibility="collapsed")
+    analyze_btn = st.button("ANALYZE / 分析開始", use_container_width=True)
 
 # --- スクレイピング関数 ---
 def get_article_content(url):
@@ -84,11 +136,8 @@ def get_article_content(url):
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # 本文抽出ロジック（pタグメイン）
         paragraphs = soup.find_all('p')
         content = "\n".join([p.get_text() for p in paragraphs])
-        
-        # 不要な空白除去
         content = content.replace("\n\n", "\n")
         
         if len(content) > 6000:
@@ -102,25 +151,19 @@ def analyze_article_with_ai(content, key):
     client = OpenAI(api_key=key)
     
     prompt = f"""
-    あなたは優秀な技術コンサルタントです。以下の技術記事を読み、指定されたフォーマットで出力してください。
-    出力は必ず日本語で行ってください。
+    あなたはクリエイティブな技術編集者です。以下の記事を読み、指定されたJSONライクな構造で情報を抽出してください（出力はテキストで構いません）。
 
-    ## 📝 3行要約
-    - (要点1: 簡潔に)
-    - (要点2: 簡潔に)
-    - (要点3: 簡潔に)
+    ## ⚡ EXECUTIVE SUMMARY
+    (3点に絞った要約)
 
-    ## 🛠️ キーワード・技術スタック
-    (関連する技術用語を5つ程度、カンマ区切りで)
+    ## 🏗️ TECH STACK
+    (技術スタックを英語でカンマ区切り)
 
-    ## 💡 ビジネス・開発へのインサイト
-    (この記事の内容を実務でどう活かせるか、またはどういう影響があるか、プロの視点で一言)
-
-    ## 😊 記事のトーン
-    (ポジティブ / ニュートラル / ネガティブ)
-
+    ## 🚀 IMPACT & INSIGHT
+    (プロフェッショナルな視点でのインサイト)
+    
     ---
-    記事本文の一部:
+    記事本文（抜粋）:
     {content}
     """
     
@@ -134,46 +177,29 @@ def analyze_article_with_ai(content, key):
     except Exception as e:
         return f"AI Error: {str(e)}"
 
-# --- メインエリア ---
-input_container = st.container()
-
-with input_container:
-    url = st.text_input("🔗 記事のURLを入力", placeholder="https://zenn.dev/...", help="Web上の技術記事のURLを貼り付けてください")
-    analyze_btn = st.button("✨ AIで分析する", type="primary", use_container_width=True)
-
+# --- 結果表示 ---
 if analyze_btn:
     if not api_key:
-        st.error("まずはサイドバーでAPIキーを設定してください！")
+        st.error("⚠️ API Key is missing.")
     elif not url:
-        st.error("URLを入力してください！")
+        st.error("⚠️ URL is missing.")
     else:
-        progress_text = "Searching and Analyzing..."
-        my_bar = st.progress(0, text=progress_text)
-
-        # 1. スクレイピング
-        my_bar.progress(30, text="🔍 記事を取得中...")
-        article_text = get_article_content(url)
-        
-        if "Error:" in article_text:
-            my_bar.empty()
-            st.error(f"記事の取得に失敗しました。\n{article_text}")
-        else:
-            # 2. AI分析
-            my_bar.progress(70, text="🧠 AIが思考中...")
-            result = analyze_article_with_ai(article_text, api_key)
-            my_bar.progress(100, text="完了！")
-            my_bar.empty()
+        with st.spinner("Processing..."):
+            article_text = get_article_content(url)
             
-            if "AI Error:" in result:
-                st.error(f"AI分析中にエラーが発生しました。\n{result}")
+            if "Error:" in article_text:
+                st.error(f"Failed to fetch: {article_text}")
             else:
-                st.success("分析が完了しました！")
+                result = analyze_article_with_ai(article_text, api_key)
                 
-                # 結果表示エリア（カード風）
-                st.markdown('<div class="result-card">', unsafe_allow_html=True)
-                st.markdown(result)
-                st.markdown('</div>', unsafe_allow_html=True)
+                if "AI Error:" in result:
+                    st.error(f"AI Failure: {result}")
+                else:
+                    st.markdown('<div class="result-card">', unsafe_allow_html=True)
+                    st.markdown('<div class="card-header">ANALYSIS RESULT</div>', unsafe_allow_html=True)
+                    st.markdown(result)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
 # --- フッター ---
-st.markdown("---")
-st.markdown('<div style="text-align: center; color: #aaa; font-size: 0.8em;">Powered by Streamlit & OpenAI | 2024 Portfolio</div>', unsafe_allow_html=True)
+st.markdown("<br><br><br>", unsafe_allow_html=True)
+st.markdown('<div style="text-align: center; color: #444; font-size: 0.8em; letter-spacing: 2px;">DESIGNED BY AI ENGINEER</div>', unsafe_allow_html=True)
